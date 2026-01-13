@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenGL 坐标系统可视化</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            gap: 40px;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .canvas-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        canvas {
+            border: 2px solid #333;
+            background: white;
+        }
+        h3 {
+            margin: 10px 0;
+            color: #333;
+            font-size: 16px;
+        }
+        .description {
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 15px;
+            background: #e8f4f8;
+            border-left: 4px solid #2196F3;
+            border-radius: 5px;
+        }
+        .description h4 {
+            margin-top: 0;
+            color: #1976D2;
+        }
+        .description p {
+            margin: 5px 0;
+            line-height: 1.6;
+            color: #333;
+        }
+        .export-btn {
+            margin-top: 10px;
+            padding: 8px 16px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        .export-btn:hover {
+            background-color: #1976D2;
+        }
+        .export-btn:active {
+            background-color: #0D47A1;
+        }
+    </style>
+</head>
+<body>
+    <div class="description">
+        <h4>📌 什么是 NDC (Normalized Device Coordinates)?</h4>
+        <p><strong>NDC（标准化设备坐标）</strong>是 OpenGL 的标准坐标系统：</p>
+        <p>• 坐标范围固定在 <strong>[-1.0, 1.0]</strong> 之间（X、Y、Z 轴都是）</p>
+        <p>• 原点 (0, 0) 位于<strong>屏幕中心</strong>，而非左上角</p>
+        <p>• 超出 [-1, 1] 范围的坐标会被裁剪掉（不显示）</p>
+        <p>• 这是一个与设备无关的坐标系统，无论屏幕分辨率如何都保持一致</p>
+    </div>
+
+    <div class="container">
+        <div class="canvas-wrapper">
+            <h3>OpenGL 标准化设备坐标 (NDC)</h3>
+            <canvas id="ndc-canvas" width="400" height="400"></canvas>
+            <button class="export-btn" onclick="exportCanvas('ndc-canvas', 'NDC坐标系')">导出图片</button>
+        </div>
+        <div class="canvas-wrapper">
+            <h3>三角形在 NDC 坐标系中</h3>
+            <canvas id="triangle-canvas" width="400" height="400"></canvas>
+            <button class="export-btn" onclick="exportCanvas('triangle-canvas', '三角形NDC')">导出图片</button>
+        </div>
+    </div>
+
+    <script>
+        // 绘制第一个画布：空坐标系
+        function drawNDCCoordinates() {
+            const canvas = document.getElementById('ndc-canvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const gridSize = 40; // 每个格子的大小
+
+            // 清空画布
+            ctx.clearRect(0, 0, width, height);
+
+            // 绘制网格
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i <= width; i += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, height);
+                ctx.stroke();
+            }
+
+            for (let i = 0; i <= height; i += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(width, i);
+                ctx.stroke();
+            }
+
+            // 绘制坐标轴
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+
+            // X轴
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY);
+            ctx.stroke();
+
+            // Y轴
+            ctx.beginPath();
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, height);
+            ctx.stroke();
+
+            // 绘制箭头
+            drawArrow(ctx, width - 10, centerY, width, centerY); // X轴箭头
+            drawArrow(ctx, centerX, 10, centerX, 0); // Y轴箭头
+
+            // 标注坐标点
+            ctx.fillStyle = '#333';
+            ctx.font = '14px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+
+            // 原点
+            ctx.fillText('(0, 0)', centerX - 25, centerY + 20);
+
+            // X轴标注
+            ctx.fillText('(-1, 0)', 30, centerY + 20);
+            ctx.fillText('(1, 0)', width - 30, centerY + 20);
+
+            // Y轴标注
+            ctx.fillText('(0, 1)', centerX + 30, 20);
+            ctx.fillText('(0, -1)', centerX + 35, height - 20);
+        }
+
+        // 绘制第二个画布：带三角形的坐标系
+        function drawTriangle() {
+            const canvas = document.getElementById('triangle-canvas');
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const gridSize = 40;
+            const scale = 200; // NDC坐标到像素的缩放比例
+
+            // 清空画布
+            ctx.clearRect(0, 0, width, height);
+
+            // 绘制网格
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+
+            for (let i = 0; i <= width; i += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, height);
+                ctx.stroke();
+            }
+
+            for (let i = 0; i <= height; i += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(width, i);
+                ctx.stroke();
+            }
+
+            // 绘制坐标轴
+            ctx.strokeStyle = '#333';
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            ctx.moveTo(0, centerY);
+            ctx.lineTo(width, centerY);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(centerX, 0);
+            ctx.lineTo(centerX, height);
+            ctx.stroke();
+
+            drawArrow(ctx, width - 10, centerY, width, centerY);
+            drawArrow(ctx, centerX, 10, centerX, 0);
+
+            // 三角形顶点坐标 (NDC)
+            const vertices = [
+                { x: 0.0, y: 0.5 },    // 顶点1
+                { x: -0.5, y: -0.5 },  // 顶点2
+                { x: 0.5, y: -0.5 }    // 顶点3
+            ];
+
+            // 转换为画布坐标并绘制三角形
+            ctx.fillStyle = 'rgba(180, 180, 180, 0.6)';
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 2;
+
+            ctx.beginPath();
+            vertices.forEach((v, i) => {
+                const x = centerX + v.x * scale;
+                const y = centerY - v.y * scale; // Y轴反转
+                if (i === 0) {
+                    ctx.moveTo(x, y);
+                } else {
+                    ctx.lineTo(x, y);
+                }
+            });
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // 标注顶点坐标
+            ctx.fillStyle = '#333';
+            ctx.font = '13px Arial';
+
+            vertices.forEach((v, i) => {
+                const x = centerX + v.x * scale;
+                const y = centerY - v.y * scale;
+
+                // 绘制顶点圆点
+                ctx.beginPath();
+                ctx.arc(x, y, 4, 0, Math.PI * 2);
+                ctx.fillStyle = '#ff0000';
+                ctx.fill();
+
+                // 标注文字
+                ctx.fillStyle = '#333';
+                let offsetX = 0, offsetY = 0;
+                if (i === 0) { // 顶点1 - 上方
+                    offsetX = 5;
+                    offsetY = -10;
+                } else if (i === 1) { // 顶点2 - 左下
+                    offsetX = -68;
+                    offsetY = 10;
+                } else { // 顶点3 - 右下
+                    offsetX = 10;
+                    offsetY = 10;
+                }
+                ctx.fillText(`(${v.x}, ${v.y})`, x + offsetX, y + offsetY);
+            });
+
+            // 移除重复的坐标标注（已经在上面的forEach中标注了）
+        }
+
+        // 绘制箭头
+        function drawArrow(ctx, fromX, fromY, toX, toY) {
+            const headLength = 10;
+            const angle = Math.atan2(toY - fromY, toX - fromX);
+
+            ctx.beginPath();
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(
+                toX - headLength * Math.cos(angle - Math.PI / 6),
+                toY - headLength * Math.sin(angle - Math.PI / 6)
+            );
+            ctx.moveTo(toX, toY);
+            ctx.lineTo(
+                toX - headLength * Math.cos(angle + Math.PI / 6),
+                toY - headLength * Math.sin(angle + Math.PI / 6)
+            );
+            ctx.stroke();
+        }
+
+        // 初始化绘制
+        drawNDCCoordinates();
+        drawTriangle();
+
+        // 导出Canvas为高清图片
+        function exportCanvas(canvasId, fileName) {
+            const originalCanvas = document.getElementById(canvasId);
+            const scale = 3; // 3倍分辨率，提高清晰度
+
+            // 创建一个新的高分辨率Canvas
+            const exportCanvas = document.createElement('canvas');
+            exportCanvas.width = originalCanvas.width * scale;
+            exportCanvas.height = originalCanvas.height * scale;
+            const ctx = exportCanvas.getContext('2d');
+
+            // 添加白色背景
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+
+            // 缩放上下文以提高清晰度
+            ctx.scale(scale, scale);
+
+            // 设置高质量渲染
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            // 将原Canvas内容绘制到新Canvas上
+            ctx.drawImage(originalCanvas, 0, 0);
+
+            // 转换为PNG格式 (quality参数对PNG无效，但保留以便将来切换到JPEG)
+            const imageData = exportCanvas.toDataURL('image/png');
+
+            // 创建下载链接
+            const downloadLink = document.createElement('a');
+            downloadLink.href = imageData;
+            downloadLink.download = `${fileName}.png`;
+
+            // 触发下载
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+        }
+    </script>
+</body>
+</html>
