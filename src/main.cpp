@@ -2,7 +2,6 @@
 #include <array>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-#include <direct.h>
 
 void processInput(GLFWwindow* window){
     // 按下 ESC 键关闭窗口
