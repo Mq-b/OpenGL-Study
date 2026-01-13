@@ -3,6 +3,7 @@
 #include <iostream>
 #include <fstream>
 #include <cmath>
+#include <filesystem>
 
 void exportSceneToSTL(float* vertices, unsigned int* indices, int indexCount, const char* filename) {
     std::ofstream file(filename);
@@ -12,8 +13,7 @@ void exportSceneToSTL(float* vertices, unsigned int* indices, int indexCount, co
     }
 
     // 获取当前绝对路径
-    char cwd[1024];
-    _getcwd(cwd, sizeof(cwd));
+    std::filesystem::path absolutePath = std::filesystem::absolute(filename);
 
     file << "solid ExportedCube" << std::endl;
     for (int i = 0; i < indexCount; i += 3) {
@@ -35,7 +35,7 @@ void exportSceneToSTL(float* vertices, unsigned int* indices, int indexCount, co
     std::cout << "\n========================================" << std::endl;
     std::cout << "导出成功！" << std::endl;
     std::cout << "文件名: " << filename << std::endl;
-    std::cout << "绝对路径: " << cwd << "\\" << filename << std::endl;
+    std::cout << "绝对路径: " << absolutePath.string() << std::endl;
     std::cout << "========================================\n" << std::endl;
 }
 
