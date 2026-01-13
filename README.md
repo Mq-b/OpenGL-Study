@@ -10,28 +10,39 @@ OpenGL 学习项目，使用现代 C++ 和 OpenGL 进行图形编程学习。
 - **GLM** - 数学库（矩阵、向量运算）
 - **nlohmann/json** - JSON 解析
 
-## 构建工具
+---
 
-- **CMake** 3.16+
-- **C++20** 标准
-- **Clang 21** (Windows)
-- **vcpkg** (依赖管理推荐)
+## 🛠 开发环境
 
-## 测试平台
+- **构建系统**：CMake ≥ 3.16
 
-- Windows (主要开发平台)
+- **语言标准**：C++20
+
+- **依赖管理**：vcpkg（推荐）
+
+- **测试平台**：
+
+  - **Windows 11 (x86_64)**
+
+    - MSVC（visual studio 17）
+    - Clang 21
+
+  - **Linux (x86_64)**
+
+    - 发行版：ubuntu-latest
+    - 编译器：GCC14
 
 ## 构建
 
 使用 vcpkg 安装依赖：
 
-```PowerShell
+```shell
 vcpkg install glfw3 glad glm nlohmann-json
 ```
 
 构建项目：
 
-```powershell
+```shell
 git clone https://github.com/Mq-b/OpenGL-Study
 cmake -B build -DCMAKE_TOOLCHAIN_FILE=[vcpkg路径]/scripts/buildsystems/vcpkg.cmake
 cmake --build build -j
