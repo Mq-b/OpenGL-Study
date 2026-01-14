@@ -42,9 +42,9 @@ concept as_char_ptr = std::convertible_to<T, const char*>;
 /**
  * @brief 编译并链接多个着色器程序
  * 
- * @tparam types 
- * @param ShaderSources 
- * @return unsigned int 
+ * @tparam types OpenGL 的着色器类型，如 GL_VERTEX_SHADER, GL_FRAGMENT_SHADER 等
+ * @param ShaderSources OpenGL 着色器源码字符串
+ * @return unsigned int 返回链接好的着色器程序 ID
  */
 template<std::size_t... types>
 unsigned int compileShader(const as_char_ptr auto&... ShaderSources) {
@@ -54,19 +54,19 @@ unsigned int compileShader(const as_char_ptr auto&... ShaderSources) {
         glCompileShader(shader);
         return shader;
     };
-    //解包参数并编译每个着色器
+    // 解包参数并编译每个着色器
     std::array array = { compileIndividualShader(ShaderSources,types)... };
     // 链接
-    unsigned int program = glCreateProgram();
+    unsigned int shaderProgram  = glCreateProgram();
     for(const auto& shader : array)
-        glAttachShader(program, shader);
+        glAttachShader(shaderProgram, shader);
 
-    glLinkProgram(program);
+    glLinkProgram(shaderProgram);
     // 释放
     for(const auto& shader : array)
         glDeleteShader(shader);
 
-    return program;
+    return shaderProgram;
 }
 
 // 顶点着色器源码
@@ -127,7 +127,9 @@ int main(){
 
         // 重复绑定 顶点数组对象（只绘制这一个图形，可有可无）
         glBindVertexArray(VAO);
-        // 绘图指令：通知 GPU 按照“三角形”规则，处理当前绑定的 VAO 里的前 3 个顶点数据（每抓到 3 个点，就自动把它们首尾相连，中间涂满颜色，形成一个实心三角形），在后台绘制
+        // 使用线框模式绘制 默认是填充模式
+        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        // 绘图指令：通知 GPU 按照“三角形”规则，处理当前绑定的 VAO 里的前 3 个顶点数据，在后台绘制三角形
         glDrawArrays(GL_TRIANGLES, 0, 3);
         // GLFW 检查是否按下了 ESC 键
         processInput(window);
