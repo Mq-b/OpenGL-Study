@@ -5,6 +5,7 @@
 #include <sstream>
 #include <array>
 #include <vector>
+#include <cstring>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
