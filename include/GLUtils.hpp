@@ -46,22 +46,92 @@ template<typename T>
 concept as_string = std::convertible_to<T, std::string>;
 
 /**
+ * @brief OpenGL 着色器类型枚举
+ * * 封装了 OpenGL 原生着色器类型的宏定义，方便在着色器类中进行类型识别和参数传递。
+ */
+enum ShaderType {
+    /// @brief 顶点着色器 (Vertex Shader)
+    Vertex          = GL_VERTEX_SHADER,
+    /// @brief 片段/像素着色器 (Fragment Shader)
+    Fragment        = GL_FRAGMENT_SHADER,
+    /// @brief 几何着色器 (Geometry Shader)
+    Geometry        = GL_GEOMETRY_SHADER,
+    /// @brief 曲面细分控制着色器 (Tessellation Control Shader)
+    TessControl     = GL_TESS_CONTROL_SHADER,
+    /// @brief 曲面细分评估着色器 (Tessellation Evaluation Shader)
+    TessEvaluation  = GL_TESS_EVALUATION_SHADER,
+    /// @brief 计算着色器 (Compute Shader)
+    Compute         = GL_COMPUTE_SHADER
+};
+
+// 基础着色器结构
+struct ShaderSource {
+    std::string source;
+    
+    ShaderSource(std::string src) : source(std::move(src)) {}
+    virtual ~ShaderSource() = default;
+    
+    virtual ShaderType getType() const = 0;
+};
+
+struct VertexShaderSource : ShaderSource {
+    using ShaderSource::ShaderSource;
+    ShaderType getType() const override { return ShaderType::Vertex; }
+};
+
+struct FragmentShaderSource : ShaderSource {
+    using ShaderSource::ShaderSource;
+    ShaderType getType() const override { return ShaderType::Fragment; }
+};
+
+struct GeometryShaderSource : ShaderSource {
+    using ShaderSource::ShaderSource;
+    ShaderType getType() const override { return ShaderType::Geometry; }
+};
+
+struct ComputeShaderSource : ShaderSource {
+    using ShaderSource::ShaderSource;
+    ShaderType getType() const override { return ShaderType::Compute; }
+};
+
+struct TessControlShaderSource : ShaderSource {
+    using ShaderSource::ShaderSource;
+    ShaderType getType() const override { return ShaderType::TessControl; }
+};
+
+struct TessEvaluationShaderSource : ShaderSource {
+    using ShaderSource::ShaderSource;
+    ShaderType getType() const override { return ShaderType::TessEvaluation; }
+};
+
+template<typename T>
+concept is_shader_source = std::is_base_of_v<ShaderSource, T>;
+
+/**
  * @brief 编译并链接多个着色器程序
  * 
- * @tparam types OpenGL 的着色器类型，如 GL_VERTEX_SHADER, GL_FRAGMENT_SHADER 等
- * @param ShaderSources OpenGL 着色器源码字符串
+ * @param ShaderObjects 自定义的着色器对象
  * @return unsigned int 返回链接好的着色器程序 ID
  */
-template<std::size_t... types>
-unsigned int compileShader(const as_char_ptr auto&... ShaderSources) {
+unsigned int compileShader(const is_shader_source auto&... ShaderObjects) {
     auto compileIndividualShader = [](const char* source,int type) {
+        static char infoLog[512]{};
+        static int success{};
+
         unsigned int shader = glCreateShader(type);
         glShaderSource(shader, 1, &source, NULL);
         glCompileShader(shader);
+        
+        glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
+        if (!success) {
+            glGetShaderInfoLog(shader, std::size(infoLog), nullptr, infoLog);
+            std::cerr << "ERROR::SHADER::COMPILATION_FAILED\n" << infoLog << std::endl;
+            std::memset(infoLog, 0, std::size(infoLog));
+        }
         return shader;
     };
     // 解包参数并编译每个着色器
-    std::array array = { compileIndividualShader(ShaderSources,types)... };
+    std::array array = { compileIndividualShader(ShaderObjects.source.c_str(), ShaderObjects.getType())... };
     // 链接
     unsigned int shaderProgram  = glCreateProgram();
     for(const auto& shader : array)

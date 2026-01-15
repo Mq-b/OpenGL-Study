@@ -1,72 +1,8 @@
-#include <iostream>
-#include <array>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
+#include "GLUtils.hpp"
 
 void processInput(GLFWwindow* window){
     if(glfwGetKey(window, GLFW_KEY_ESCAPE) == GLFW_PRESS)
         glfwSetWindowShouldClose(window, true);
-}
-
-void initGLFW(){
-    if (!glfwInit()) {
-        std::cerr << "Failed to initialize GLFW" << std::endl;
-        exit(-1);
-    }
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-    glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-}
-
-GLFWwindow* createWindow(std::size_t width, std::size_t height, const char* title){
-    GLFWwindow* window = glfwCreateWindow(width, height, title, nullptr, nullptr);
-    if (!window) {
-        std::cerr << "Failed to create GLFW window" << std::endl;
-        glfwTerminate();
-        exit(-1);
-    }
-    glfwMakeContextCurrent(window);
-
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
-    {
-        std::cerr << "Failed to initialize GLAD" << std::endl;
-        exit(-1);
-    }
-    glViewport(0, 0, width, height);
-    return window;
-}
-
-template<typename T>
-concept as_char_ptr = std::convertible_to<T, const char*>;
-
-/**
- * @brief 编译并链接多个着色器程序
- * 
- * @tparam types OpenGL 的着色器类型，如 GL_VERTEX_SHADER, GL_FRAGMENT_SHADER 等
- * @param ShaderSources OpenGL 着色器源码字符串
- * @return unsigned int 返回链接好的着色器程序 ID
- */
-template<std::size_t... types>
-unsigned int compileShader(const as_char_ptr auto&... ShaderSources) {
-    auto compileIndividualShader = [](const char* source,int type) {
-        unsigned int shader = glCreateShader(type);
-        glShaderSource(shader, 1, &source, NULL);
-        glCompileShader(shader);
-        return shader;
-    };
-    // 解包参数并编译每个着色器
-    std::array array = { compileIndividualShader(ShaderSources,types)... };
-    // 链接
-    unsigned int shaderProgram  = glCreateProgram();
-    for(const auto& shader : array)
-        glAttachShader(shaderProgram, shader);
-
-    glLinkProgram(shaderProgram);
-    // 释放
-    for(const auto& shader : array)
-        glDeleteShader(shader);
-
-    return shaderProgram;
 }
 
 // 顶点着色器源码
@@ -90,13 +26,14 @@ const char *fragmentShaderSource = R"(
 )";
 
 int main(){
+    using namespace glutils;
     // 初始化 glfw 使用 OpenGL3.3 核心模式
     initGLFW();
     // 创建窗口，设置OpenGL上下文，并加载 GLAD 激活 OpenGL 的函数指针。
     auto window = createWindow(800, 600, "OpenGL Triangle");
 
     // 编译链接着色器程序
-    auto shaderProgram = compileShader<GL_VERTEX_SHADER, GL_FRAGMENT_SHADER>(vertexShaderSource, fragmentShaderSource);
+    auto shaderProgram = compileShader(VertexShaderSource{vertexShaderSource}, FragmentShaderSource{fragmentShaderSource});
 
     // 三角形顶点数据
     std::array vertices {

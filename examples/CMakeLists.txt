@@ -6,6 +6,7 @@ foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
 
     add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE})
 
+    target_include_directories(${EXAMPLE_NAME} PRIVATE "../include")
     target_link_libraries(${EXAMPLE_NAME} PRIVATE
         nlohmann_json::nlohmann_json
         OpenGL::GL
